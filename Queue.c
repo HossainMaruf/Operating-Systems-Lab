@@ -1,69 +1,28 @@
 #include <stdio.h>
-#include <stdbool.h>
-#define QUEUE_SIZE 10
+#include "queue.h"
 
-typedef struct {
-    int pid, at, bt, wt, st, ct, tt;
-} Process;
+void initializeQueue(Queue *q) { q->front = -1, q->rear = -1; }
+int isEmpty(Queue *q) { return ((q->front) == -1) && ((q->rear) == -1); }
+int size(Queue *q) { return (q->rear)+1; }
+int isFull(Queue *q) { return (size(q) == QUEUE_SIZE) ? 1 : 0; }
 
-int front = -1, rear = -1;
-Process* readyQueue[QUEUE_SIZE];
-int isEmpty(void) { return (front == -1) && (rear == -1); }
-int size(void) { return rear+1; }
-void enqueue(Process *p) {
-    if(isEmpty) {
-        // push first time
-        readyQueue[++rear] = p; // now rear is 0
-        front = 0; // front is also 0
-    } else {
-        // TODO: check for full or not
-        readyQueue[++rear] = p;
+Type enqueue(Queue *q, Type item) {
+    if(isFull(q)) return NULL; // no space for enqueue
+    if(isEmpty(q)) (q->front) = 0; // first time push so front should be 0
+    return q->data[++(q->rear)] = item;  // enqueue the item and return it
+}
+
+Type dequeue(Queue *q) {
+    if (isEmpty(q)) return NULL;
+    else {
+        // so take the (q->front) in temp
+        Type temp = q->data[q->front];
+        // Shift left all the elements by 1 index 
+        for(int i=(q->front); i< (q->rear); i++) q->data[i] = q->data[i+1];
+        (q->rear)--; // decrease the rear value
+        if((q->rear) == -1) (q->front) = -1;
+        return temp;
     }
 }
 
-Process* dequeue(void) {
-    if(isEmpty()) return NULL;
-    else if(front == 0 && rear == 0) {
-        front = -1;
-        return readyQueue[rear--];
-    } else return readyQueue[rear--];
-}
-
-void os(Process process[], int n) { 
-    // based on arrial time os push the process to the readyQueue
-    for(int i=0; i<n-1; i++) {
-        for(int j=0; j<n-1-i; j++) {
-            if(process[j].at > process[j+1].at) {
-                Process temp = process[j];
-                process[j] = process[j+1];
-                process[j+1] = temp;
-            }
-        }
-    }
-    for(int i=0; i<n; i++) {
-        enqueue(&process[i]);
-    }
-}
-
-void printReadyQueue() {
-    printf("PID\tAT\tBT\tWT\tST\tCT\tTT\n");
-    printf("--------------------------------------------------\n");
-    for(int i=0; i<size(); i++) {
-        printf("P%d\t%d\t%d\n", (*readyQueue[i]).pid, (*readyQueue[i]).at, (*readyQueue[i]).bt);
-    }
-    printf("\n");
-}
-
-
-void main() {
-    freopen("input.txt", "r", stdin);
-    int n;
-    scanf("%d", &n);
-    Process process[n];
-    for(int i=0; i<n; i++) {
-        process[i].pid = i+1;
-        scanf("%d%d", &process[i].at, &process[i].bt);
-    }
-    os(process, n);
-    printReadyQueue();
-}
+Type first(Queue *q) { return isEmpty(q) ? NULL : q->data[q->front]; }
