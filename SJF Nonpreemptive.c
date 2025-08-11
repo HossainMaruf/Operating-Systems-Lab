@@ -112,6 +112,7 @@ int main() {
         Process* selectedProcess = scheduler(); // which one need to be scheduled next
         // printReadyQueue();
         if(selectedProcess != NULL) cpu(selectedProcess);
+        else time++;
         // printReadyQueue();
     }
     printf("\n\n");

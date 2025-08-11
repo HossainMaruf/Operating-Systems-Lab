@@ -1,13 +1,14 @@
 /**
- * Problem 1: https://www.guru99.com/fcfs-scheduling.html
- * Problem 2: https://www.gatevidyalay.com/first-come-first-serve-cpu-scheduling/
- */
+ * Problem 1: https://www.guru99.com/shortest-job-first-sjf-scheduling.html 
+ * Problem 2: https://www.tutorialspoint.com/operating_system/os_shortest_job_first_scheduling.htm
+ * Problem 3: https://www.gatevidyalay.com/sjf-scheduling-srtf-cpu-scheduling/
+ */ 
 #include <stdio.h>
 #include <stdbool.h>
 #include "vector.h"
 Vector v;
 
-int time = 0, idleTime = 0, total_wt = 0, total_tt = 0, processedCounter = 0;
+int time = 0, total_wt = 0, total_tt = 0, processedCounter = 0;
 typedef struct {
     int pid, at, bt, wt, st, ct, tt, status;
     /**
@@ -53,7 +54,7 @@ void cpu(Process *p) {
 
 
 Process* scheduler() {
-    // get process of minimum AT by following FCFS algorithm
+    // get process of minimum BT by following SJF algorithm
     Process *min = NULL, *now = NULL;
     // Get first unscheduled process that is local minimum
     for(int i=0; i<size(&v); i++) {
@@ -67,7 +68,7 @@ Process* scheduler() {
     if(min != NULL) {
         for(int i=0; i<size(&v); i++) {
             now = v.data[i];
-            if((min->at > now->at) && (now->status == 0)) min = now;
+            if((min->bt > now->bt) && (now->status == 0)) min = now;
         }
     }
     return min;
@@ -111,17 +112,12 @@ int main() {
         Process* selectedProcess = scheduler(); // which one need to be scheduled next
         // printReadyQueue();
         if(selectedProcess != NULL) cpu(selectedProcess);
-        else {
-            time++;
-            idleTime++;
-        }
         // printReadyQueue();
     }
     printf("\n\n");
     printTable(process, n);
     printf("Average waiting time = %.3f\n", (float)total_wt / n );
     printf("Average turnaround time = %.3f\n", (float)total_tt / n );
-    printf("Idle Time = %d\n", idleTime);
     freeVector(&v);
     return 0;
 }
