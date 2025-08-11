@@ -1,56 +1,89 @@
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
+#include <bits/stdc++.h>
+using namespace std;
 
-int main() {
-  int nb, nf;
+struct Blocks {
+    int block_no = 0, block_size = 0, file_no = 0, file_size = 0,
+    fragmentation = 0;
+};
 
-  printf("Memory Management Scheme - Best Fit\n");
-
-  printf("Enter the number of blocks: ");
-  scanf("%d", &nb); // take how many blocks
-  int blocks[nb+1], blocks_flag[nb+1], answer[nb+1], fragmentation[nb+1];
-  blocks[0] = -1;
-  printf("Enter the size of the blocks.\n"); // enter each block size
-  for (int i = 1; i <= nb; i++) {
-    printf("Block %d:", i);
-    scanf("%d", &blocks[i]);
-  }
-
-  printf("Enter the number of files: "); // take how many files or process
-  scanf("%d", &nf);
-  int files[nf+1], files_flag[nf+1];
-  files[0] = -1;
-  printf("Enter the size of the files.\n"); // enter each file or process size
-  for (int i = 1; i <= nf; i++) {
-    printf("File %d:", i);
-    scanf("%d", &files[i]);
-  }
-  // SET ALL THE MEMORY
-  memset(blocks_flag, -1, (nb+1)*sizeof(int)); // you can use for loop
-  memset(answer, -1, (nb+1)*sizeof(int)); // you can use for loop
-  memset(fragmentation, -1, (nb+1)*sizeof(int)); // you can use for loop
-
-  memset(files_flag, -1, (nf+1)*sizeof(int)); // you can use for loop
-
-  for (int i = 1; i <= nf; i++) {
-    int best_index = -1;
-    for (int j = 1; j <= nb; j++) {
-      if (blocks_flag[j] == -1 && (blocks[j] >= files[i])) {
-        if(best_index == -1) best_index = j; 
-        else if(blocks[best_index] > blocks[j]) best_index = j;
-      }
+int main()
+{
+    freopen("PartitionData.txt", "r", stdin);
+    int nb, nf;
+    cin >> nb;
+    struct Blocks blocks[nb];
+    // Input of Block Information
+    for (int i = 0; i < nb; i++) {
+        cin >> blocks[i].block_size;
+        blocks[i].block_no = i+1;
     }
-    if(best_index != -1) {
-        answer[best_index] = i;
-        files_flag[i] = 1;
-        blocks_flag[best_index] = 1;
-        fragmentation[best_index] = blocks[best_index] - files[i];
-    }
-  }
 
-  printf("\nBlockNo:\tBlockSize:\tFileNo:\t\tFileSize:\tFragement");
-  for (int i = 1; i <= nb; i++)
-    printf("\n%d\t\t%d\t\t%d\t\t%d\t\t%d", i, blocks[i], answer[i], answer[i] == -1 ? -1 : files[answer[i]], fragmentation[i]);
-  return 0;
+    // Input of File Information
+    cin >> nf;
+    int files[nf];
+    for(int i=0; i<nf; i++) {
+        cin >> files[i];
+    }
+    // BEST FIT ALGORITHM
+    for(int i=0; i<nf; i++) {
+        int file_size = files[i];
+        // Traverse the blocks array
+        int minBlock = -1;
+        vector<struct Blocks> v; 
+        for(int j=0; j<nb; j++) {
+            if((blocks[j].block_size >= file_size) && (blocks[j].file_no == 0)) {
+               v.push_back(blocks[j]);
+               if(minBlock == -1) {
+                // First satisfied block
+                minBlock = v[0].block_no;
+               } else {
+                // This is not the first block
+                    if(v[v.size()-1].block_size < blocks[minBlock-1].block_size) {
+                        minBlock = v[v.size()-1].block_no;
+                    }
+               }
+            }
+        }
+        cout << "File " << i+1 << endl;
+        cout << "Probable Block No: "; 
+        for(int t=0; t<v.size(); t++) {
+            cout << v[t].block_no << " ";
+        }
+        cout << endl;
+        /**
+         * 
+        // Which block is Minimum
+        // int minBlock = -1;
+        // if(v.size() > 0) {
+        //     minBlock = v[0].block_no;
+        //     for(int m=1; m<v.size(); m++) {
+        //         if((v[m].block_size < blocks[minBlock-1].block_size) && (v[m].file_no == 0)) {
+        //             minBlock = v[m].block_no;
+        //         }
+        //     }
+        // }
+        // cout << "MinBlock: " << minBlock << endl;
+         * 
+        */
+
+        if(minBlock == -1) continue;
+        minBlock = minBlock-1;
+        //Occupy the block
+        blocks[minBlock].file_no = i+1;
+        blocks[minBlock].file_size = file_size;
+        blocks[minBlock].fragmentation = blocks[minBlock].block_size - file_size;
+    }
+
+
+    // Print Table (Memory State)
+    cout << "BlockNo\tBlockSize\tFileNo\tFileSize\tFragmentation" << endl;
+    for (int i = 0; i < nb; i++)
+    {
+        cout << blocks[i].block_no << "\t" <<
+        blocks[i].block_size << "\t\t" <<  
+        blocks[i].file_no << "\t\t" << 
+        blocks[i].file_size << "\t\t" << 
+        blocks[i].fragmentation << endl;
+    }
+    return 0;
 }
