@@ -8,9 +8,9 @@
 #include "vector.h"
 Vector v;
 
-int time = 0, total_wt = 0, total_tt = 0, processedCounter = 0;
+int time = 0, idleTime = 0, total_wt = 0, total_tt = 0, processedCounter = 0;
 typedef struct {
-    int pid, at, bt, wt, st, ct, tt, status;
+    int pid, at, bt, rt, wt, st, ct, tt, status, isPreempted;
     /**
      * status = -1, The process has completed born state only
      * status = 0,  OS pushed it in the ready queue but no scheduled
@@ -40,15 +40,32 @@ void os(Process process[], int n) {
 }
 
 void cpu(Process *p) {
-    p->st = time;
-    p->ct = p->st + p->bt;
-    p->wt = p->st - p->at;
-    p->tt = p->wt + p->bt;
-    time = p->ct;
-    total_wt += p->wt;
-    total_tt += p->tt;
-    p->status = 1; // mark it as scheduled
-    processedCounter++;
+    if(p->isPreempted == false) {
+        p->st = time; // start execution
+        p->ct = p->st + 1; // Update only when p->rt = 0
+        p->wt = p->st - p->at;
+        p->rt -= 1; // decrease remaining time by 1 second
+        time++; // exexute for only 1 second
+    } else {
+        // p->st = time; // Don't update
+        // p->ct = p->st + 1; // Update only when p->rt = 0
+        p->wt += (time - p->ct);
+        p->rt -= 1; //
+        time++; // exexute for only 1 second
+    }
+
+    if(p->rt == 0) {
+        processedCounter++;
+        p->status = 1;
+        p->ct = time; // now it is complete
+        p->tt = p->wt + p->bt;
+        total_wt += p->wt;
+        total_tt += p->tt;
+    }
+    else {
+        p->status = 0;
+        p->isPreempted = true;
+    }
     printf("P%d ", p->pid);
 }
 
@@ -68,7 +85,7 @@ Process* scheduler() {
     if(min != NULL) {
         for(int i=0; i<size(&v); i++) {
             now = v.data[i];
-            if((min->bt > now->bt) && (now->status == 0)) min = now;
+            if((min->rt > now->rt) && (now->status == 0)) min = now;
         }
     }
     return min;
@@ -105,6 +122,8 @@ int main() {
         scanf("%d%d", &process[i].at, &process[i].bt);
         process[i].pid = i+1;
         process[i].status = -1;
+        process[i].rt = process[i].bt;
+        process[i].isPreempted = false;
     }
     // sort(process, n); // sort processes by arrival time 
     while(processedCounter != n) {
@@ -112,12 +131,14 @@ int main() {
         Process* selectedProcess = scheduler(); // which one need to be scheduled next
         // printReadyQueue();
         if(selectedProcess != NULL) cpu(selectedProcess);
+        else time++;
         // printReadyQueue();
     }
     printf("\n\n");
     printTable(process, n);
     printf("Average waiting time = %.3f\n", (float)total_wt / n );
     printf("Average turnaround time = %.3f\n", (float)total_tt / n );
+    printf("Idle time = %d\n", idleTime);
     freeVector(&v);
     return 0;
 }
