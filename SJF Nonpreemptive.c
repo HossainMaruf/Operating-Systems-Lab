@@ -1,9 +1,14 @@
+/**
+ * Problem 1: https://www.guru99.com/shortest-job-first-sjf-scheduling.html 
+ * Problem 2: https://www.tutorialspoint.com/operating_system/os_shortest_job_first_scheduling.htm
+ * Problem 3: https://www.gatevidyalay.com/sjf-scheduling-srtf-cpu-scheduling/
+ */ 
 #include <stdio.h>
 #include <stdbool.h>
 #include "vector.h"
 Vector v;
 
-int time = 0, processedCounter = 0;
+int time = 0, total_wt = 0, total_tt = 0, processedCounter = 0;
 typedef struct {
     int pid, at, bt, wt, st, ct, tt, status;
     /**
@@ -40,25 +45,39 @@ void cpu(Process *p) {
     p->wt = p->st - p->at;
     p->tt = p->wt + p->bt;
     time = p->ct;
+    total_wt += p->wt;
+    total_tt += p->tt;
     p->status = 1; // mark it as scheduled
     processedCounter++;
+    printf("P%d ", p->pid);
 }
 
 
 Process* scheduler() {
     // get process of minimum BT by following SJF algorithm
-    Process *min = v.data[0], *now = NULL;
-    for(int i=1; i<size(&v); i++) {
-        now = v.data[i];
-        if((min->bt > now->bt) && (now->status == 0)) min = now;
+    Process *min = NULL, *now = NULL;
+    // Get first unscheduled process that is local minimum
+    for(int i=0; i<size(&v); i++) {
+        Process *now = v.data[i];
+        if(now->status == 0) {
+            min = now;
+            break;
+        }
     }
-    return now;
+    // Traverse full array to find out global minimum
+    if(min != NULL) {
+        for(int i=0; i<size(&v); i++) {
+            now = v.data[i];
+            if((min->bt > now->bt) && (now->status == 0)) min = now;
+        }
+    }
+    return min;
 }
 
 
 void printReadyQueue() {
-    printf("PID\tAT\tBT\tWT\tST\tCT\tTT\tStatus\n");
-    printf("--------------------------------------------------\n");
+    printf("PID\tAT\tBT\tStatus\n");
+    printf("------------------------------\n");
     for(int i=0; i<size(&v); i++) {
         Process *p = v.data[i];
         printf("P%d\t%d\t%d\t%d\n", p->pid, p->at, p->bt, p->status);
@@ -87,14 +106,18 @@ int main() {
         process[i].pid = i+1;
         process[i].status = -1;
     }
-    sort(process, n); // sort processes by arrival time 
+    // sort(process, n); // sort processes by arrival time 
     while(processedCounter != n) {
         os(process, n); // using arrival time push to the ready queue
-        printReadyQueue();
         Process* selectedProcess = scheduler(); // which one need to be scheduled next
-        cpu(selectedProcess);
+        // printReadyQueue();
+        if(selectedProcess != NULL) cpu(selectedProcess);
+        // printReadyQueue();
     }
-    // printTable(process, n);
+    printf("\n\n");
+    printTable(process, n);
+    printf("Average waiting time = %.3f\n", (float)total_wt / n );
+    printf("Average turnaround time = %.3f\n", (float)total_tt / n );
     freeVector(&v);
     return 0;
 }
