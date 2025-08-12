@@ -39,37 +39,6 @@ void os(Process process[], int n) {
     }
 }
 
-void cpu(Process *p) {
-    if(p->isPreempted == false) {
-        p->st = time; // start execution
-        p->ct = p->st + 1; // Update only when p->rt = 0
-        p->wt = p->st - p->at;
-        p->rt -= 1; // decrease remaining time by 1 second
-        time++; // exexute for only 1 second
-    } else {
-        // p->st = time; // Don't update
-        // p->ct = p->st + 1; // Update only when p->rt = 0
-        p->wt += (time - p->ct);
-        p->rt -= 1; //
-        time++; // exexute for only 1 second
-    }
-
-    if(p->rt == 0) {
-        processedCounter++;
-        p->status = 1;
-        p->ct = time; // now it is complete
-        p->tt = p->wt + p->bt;
-        total_wt += p->wt;
-        total_tt += p->tt;
-    }
-    else {
-        p->status = 0;
-        p->isPreempted = true;
-    }
-    printf("P%d ", p->pid);
-}
-
-
 Process* scheduler() {
     // get process of minimum BT by following SJF algorithm
     Process *min = NULL, *now = NULL;
@@ -91,6 +60,41 @@ Process* scheduler() {
     return min;
 }
 
+void cpu(Process *p, Process process[], int n) {
+    if(p->st == -1) {
+        p->st = time; // start execution
+        p->wt = p->st - p->at;
+    }
+    if(p->isPreempted == true) { p->wt += (time - p->ct); } 
+
+    time++; // exexute for only 1 second
+    p->rt -= 1; // decrease remaining time by 1 second
+
+    os(process, n);
+    Process *hasProcess = scheduler();
+    if(hasProcess != NULL && (hasProcess->pid == p->pid)) {
+        // no process without running process
+        if(p->rt == 0) {
+            // The process has no remaining time to schedule
+            processedCounter++;
+            p->status = 1;
+            p->isPreempted = false;
+            p->ct = time; // now it is complete
+            p->tt = p->wt + p->bt;
+            total_wt += p->wt;
+            total_tt += p->tt;
+        } else {
+            p->isPreempted = false;
+            cpu(p, process, n);
+        } 
+    } else if(hasProcess != NULL && (hasProcess->pid != p->pid)) {
+        // There is a process of higher priority
+        // make preemption
+        p->isPreempted = true;
+        p->ct = time; // temporary completion time
+    } else if(hasProcess == NULL) return;
+    printf("P%d ", p->pid);
+}
 
 void printReadyQueue() {
     printf("PID\tAT\tBT\tStatus\n");
@@ -103,10 +107,10 @@ void printReadyQueue() {
 }
 
 void printTable(Process p[], int n) {
-    printf("PID\tAT\tBT\tWT\tST\tCT\tTT\n");
+    printf("PID\tAT\tBT\tWT\tST\tCT\tTT\tRT\n");
     printf("--------------------------------------------------\n");
     for(int i=0; i<n; i++) {
-        printf("P%d\t%d\t%d\t%d\t%d\t%d\t%d\n", p[i].pid, p[i].at, p[i].bt, p[i].wt, p[i].st, p[i].ct, p[i].tt);
+        printf("P%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\n", p[i].pid, p[i].at, p[i].bt, p[i].wt, p[i].st, p[i].ct, p[i].tt, p[i].rt);
     }
     printf("\n");
 }
@@ -122,6 +126,7 @@ int main() {
         scanf("%d%d", &process[i].at, &process[i].bt);
         process[i].pid = i+1;
         process[i].status = -1;
+        process[i].st = -1; // Flag to detect how many times it is pushed to queue
         process[i].rt = process[i].bt;
         process[i].isPreempted = false;
     }
@@ -130,8 +135,8 @@ int main() {
         os(process, n); // using arrival time push to the ready queue
         Process* selectedProcess = scheduler(); // which one need to be scheduled next
         // printReadyQueue();
-        if(selectedProcess != NULL) cpu(selectedProcess);
-        else time++;
+        if(selectedProcess != NULL) cpu(selectedProcess, process, n);
+        else { time++; idleTime++; };
         // printReadyQueue();
     }
     printf("\n\n");

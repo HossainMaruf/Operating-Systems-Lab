@@ -8,7 +8,7 @@
 #include "vector.h"
 Vector v;
 
-int time = 0, total_wt = 0, total_tt = 0, processedCounter = 0;
+int time = 0, idleTime = 0, total_wt = 0, total_tt = 0, processedCounter = 0;
 typedef struct {
     int pid, at, bt, wt, st, ct, tt, status;
     /**
@@ -112,13 +112,14 @@ int main() {
         Process* selectedProcess = scheduler(); // which one need to be scheduled next
         // printReadyQueue();
         if(selectedProcess != NULL) cpu(selectedProcess);
-        else time++;
+        else { time++; idleTime++; };
         // printReadyQueue();
     }
     printf("\n\n");
     printTable(process, n);
     printf("Average waiting time = %.3f\n", (float)total_wt / n );
     printf("Average turnaround time = %.3f\n", (float)total_tt / n );
+    printf("Idle time = %d\n", idleTime);
     freeVector(&v);
     return 0;
 }
